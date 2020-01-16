@@ -1,0 +1,35 @@
+{
+	"folders": [
+		{
+			"path": "/Users/majdsalaheddin/Desktop/RT-Cadminum"
+		},
+		{
+			"path": "/Users/majdsalaheddin/RT-Cadmium-Blinky"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"random": "cpp",
+			"iostream": "cpp",
+			"istream": "cpp",
+			"*.tpp": "cpp",
+			"string": "cpp",
+			"filesystem": "cpp",
+			"iosfwd": "cpp",
+			"__functional_base": "cpp",
+			"__functional_base_03": "cpp",
+			"__hash_table": "cpp",
+			"__tuple": "cpp",
+			"array": "cpp",
+			"chrono": "cpp",
+			"type_traits": "cpp",
+			"functional": "cpp",
+			"limits": "cpp",
+			"memory": "cpp",
+			"ratio": "cpp",
+			"tuple": "cpp",
+			"utility": "cpp",
+			"ostream": "cpp"
+		}
+	}
+}
