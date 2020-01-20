@@ -6,12 +6,13 @@
 * Simple modle to toggle the LED using DEVS internal transitions.
 */
 
-#ifndef BOOST_SIMULATION_PDEVS_receiver_HPP
-#define BOOST_SIMULATION_PDEVS_receiver_HPP
+#ifndef BOOST_SIMULATION_PDEVS_transmitter_HPP
+#define BOOST_SIMULATION_PDEVS_transmitter_HPP
+#define TRANSFER_SIZE   4
 
-#include <stdio.h>
 #include <cadmium/modeling/ports.hpp>
 #include <cadmium/modeling/message_bag.hpp>
+#include <stdio.h>
 #include <limits>
 #include <math.h>
 #include <assert.h>
@@ -26,33 +27,31 @@
 #include <random>
 #include "../drivers/nRF24L01P.h"
 
-#define TRANSFER_SIZE   4
-
 using namespace cadmium;
 using namespace std;
 
 //Port definition
-    struct receiver_defs {
+    struct transmitter_defs {
         struct dataOut : public out_port<bool> { };
         struct in : public in_port<bool> { };
     };
 
     template<typename TIME>
-    class receiver {
-        using defs=receiver_defs; // putting definitions in context
+    class transmitter {
+        using defs=transmitter_defs; // putting definitions in context
         public:
             //Parameters to be overwriten when instantiating the atomic model
             TIME   slowToggleTime;
             // default constructor
-            receiver(PinName s, PinName t, PinName q, PinName w, PinName r, PinName a){
-              slowToggleTime  = TIME("00:00:30:00");
+            transmitter(PinName s, PinName t, PinName q, PinName w, PinName r, PinName a) {
+              slowToggleTime  = TIME("00:10:00:00");
               state.temp = new nRF24L01P(s,t,q,w,r,a);
               state.newTag = false;
             }
 
             // state definition
             struct state_type{
-              char s[32] = " " ;
+              char s[32] =  " Car 2  says hi ";
               nRF24L01P* temp;
               bool newTag;
             };
@@ -61,53 +60,61 @@ using namespace std;
 
             using input_ports=std::tuple<typename defs::in>;
             using output_ports=std::tuple<typename defs::dataOut>;
+            int t = 0 ;
 
-            // used to power up the antenna once
-            int w = 0 ;
+
 
             // internal transition
             void internal_transition() {
-              if(w==0){
-                  state.temp->powerUp();
-                  w= 1;
-                }
-              state.temp->setTransferSize(32);
-              state.temp->setReceiveMode();
-              state.temp->enable();
-              //for(int a = 0; a <= 2 ; a = a + 1) {
-              for (int b = 0 ; b <=25; b= b+1){
+              printf( "every other run");
+              if (t = 0 ){
+                state.temp->powerUp(); // power up antenna
+                t= t+1 ;
+                printf( "Firstrun");
+              }
 
-                 if( state.temp->readable(0)) {
-                     state.temp->read(0, state.s,sizeof(state.s)); // reading hello world
 
-                     printf( "Receiving data :%s  \n",state.s);
-                     printf("\n");
-                     printf("\n");
-                     printf("\n");
 
-                    }
-                    else{
-                         printf( "not receiving data  \n");
-                    }
 
-                }
+
+
             }
 
             // external transition
             void external_transition(TIME e, typename make_message_bags<input_ports>::type mbs) {
 
+              printf( "nRF24L01+ Frequency    : %d MHz\r\n",  state.temp->getRfFrequency() );
+              printf( "nRF24L01+ Output power : %d dBm\r\n",  state.temp->getRfOutputPower() );
+              printf( "nRF24L01+ Data Rate    : %d kbps\r\n", state.temp->getAirDataRate() );
+              printf( "nRF24L01+ TX Address   : 0x%010llX\r\n", state.temp->getTxAddress() );
+
+
+              for(const auto &x : get_messages<typename defs::in>(mbs)){
+                // if the button is presssed we want to send the signal to the recevier
+
+                state.temp->setTransferSize(32);
+                state.temp->setTransmitMode();
+                state.temp->enable(); // enable ce pin
+                state.temp->write(1, state.s,32); // writing hello world
+	              printf("%i \n",sizeof(state.s));
+                printf( "Sending data:%s \n",state.s);
+                state.temp->disable();
+
+
+              }
+
             }
             // confluence transition
             void confluence_transition(TIME e, typename make_message_bags<input_ports>::type mbs) {
               internal_transition();
-              external_transition(TIME(), std::move(mbs));
+             // external_transition(TIME(), std::move(mbs));
             }
 
             // output function
             typename make_message_bags<output_ports>::type output() const {
               typename make_message_bags<output_ports>::type bags;
               bool out;
-              out = (state.newTag ? 1 : 0);
+              out = (state.newTag ? 1: 0);
               get_messages<typename defs::dataOut>(bags).push_back(out);
 
               return bags;
@@ -115,14 +122,16 @@ using namespace std;
 
             // time_advance function
             TIME time_advance() const {
-                return slowToggleTime;
+              // not needed ?
+              return slowToggleTime;
+
             }
 
-            friend std::ostringstream& operator<<(std::ostringstream& os, const typename receiver<TIME>::state_type& o) {
-              os << "Output: " << (o.newTag ? 1 : 0);
+            friend std::ostringstream& operator<<(std::ostringstream& os, const typename transmitter<TIME>::state_type& i) {
+              os << "Output: " << (i.newTag ? 1 : 0);
               return os;
             }
         };
 
 
-#endif
+#endif // BOOST_SIMULATION_PDEVS_BLINKY_HPP

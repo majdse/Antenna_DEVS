@@ -27,7 +27,7 @@
 #include <cadmium/real_time/arm_mbed/io/digitalInput.hpp>
 #include <cadmium/real_time/arm_mbed/io/digitalOutput.hpp>
 
-#include "../atomics/receiver.hpp"
+#include "../atomics/transmitter.hpp"
 
 #ifdef RT_ARM_MBED
   #include "../mbed.h"
@@ -80,11 +80,6 @@ int main(int argc, char ** argv) {
   /*******************************************/
 
   using AtomicModelPtr=std::shared_ptr<cadmium::dynamic::modeling::model>;
-
-
-
-
-
   using CoupledModelPtr=std::shared_ptr<cadmium::dynamic::modeling::coupled<TIME>>;
 
   /********************************************/
@@ -96,13 +91,13 @@ int main(int argc, char ** argv) {
   /********************************************/
   /********** DigitalInput1 *******************/
   /********************************************/
-  //AtomicModelPtr digitalInput1 = cadmium::dynamic::translate::make_dynamic_atomic_model<DigitalInput, TIME>("digitalInput1", BUTTON1);
+  AtomicModelPtr digitalInput1 = cadmium::dynamic::translate::make_dynamic_atomic_model<DigitalInput, TIME>("digitalInput1", BUTTON1);
 
   /********************************************/
   /********* DigitalOutput1 *******************/
   /********************************************/
-  AtomicModelPtr digitalOutput1 = cadmium::dynamic::translate::make_dynamic_atomic_model<DigitalOutput, TIME>("digitalOutput1", LED1);
-  AtomicModelPtr RX = cadmium::dynamic::translate::make_dynamic_atomic_model<receiver, TIME>("RX", D11, D12, D13, D15,D14,D9);
+  //AtomicModelPtr digitalOutput1 = cadmium::dynamic::translate::make_dynamic_atomic_model<DigitalOutput, TIME>("digitalOutput1", LED1);
+  AtomicModelPtr TX = cadmium::dynamic::translate::make_dynamic_atomic_model<transmitter, TIME>("TX", D11, D12, D13, D15,D14,D9);
 
 
   /************************/
@@ -110,12 +105,12 @@ int main(int argc, char ** argv) {
   /************************/
   cadmium::dynamic::modeling::Ports iports_TOP = {};
   cadmium::dynamic::modeling::Ports oports_TOP = {};
-  cadmium::dynamic::modeling::Models submodels_TOP =  {RX,digitalOutput1};
+  cadmium::dynamic::modeling::Models submodels_TOP =  {TX,digitalInput1};
   cadmium::dynamic::modeling::EICs eics_TOP = {};
   cadmium::dynamic::modeling::EOCs eocs_TOP = {};
   cadmium::dynamic::modeling::ICs ics_TOP = {
-    cadmium::dynamic::translate::make_IC<receiver_defs::dataOut, digitalOutput_defs::in>("RX","digitalOutput1"),
-    //cadmium::dynamic::translate::make_IC<digitalInput_defs::out, blinky_defs::in>("digitalInput1", "blinky1")
+    //cadmium::dynamic::translate::make_IC<transmitter_defs::dataOut, digitalInput_defs::in>("TX","digitalInput1"),
+    cadmium::dynamic::translate::make_IC<digitalInput_defs::out, transmitter_defs::in>("digitalInput1", "TX")
   };
   CoupledModelPtr TOP = std::make_shared<cadmium::dynamic::modeling::coupled<TIME>>(
     "TOP",
@@ -129,7 +124,7 @@ int main(int argc, char ** argv) {
 
   ///****************////
   cadmium::dynamic::engine::runner<NDTime, logger_top> r(TOP, {0});
-  r.run_until(NDTime("40:00:00:000"));
+  r.run_until(NDTime("30:00:00:000"));
   #ifndef RT_ARM_MBED
     return 0;
   #endif
